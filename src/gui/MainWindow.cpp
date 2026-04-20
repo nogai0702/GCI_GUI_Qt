@@ -6,6 +6,12 @@
 #include <QLocale>
 #include <QPalette>
 #include <QFile>
+#include <QStyleHints>
+#include <QGuiApplication>
+#include <QMenuBar>
+#include <QMenu>
+#include <QActionGroup>
+#include <QAction>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,12 +19,33 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Load Styling from Resource
-    QFile styleFile(":/src/gui/style.qss");
-    if (styleFile.open(QFile::ReadOnly)) {
-        QString styleSheet = QLatin1String(styleFile.readAll());
-        this->setStyleSheet(styleSheet);
-    }
+    // Initial theme setup
+    applyTheme(isSystemDarkMode());
+
+    // Connect to system theme changes
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
+            this, &MainWindow::updateTheme);
+
+    // Theme Menu
+    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
+    auto *themeGroup = new QActionGroup(this);
+    
+    QAction *systemAction = viewMenu->addAction(tr("System Default"));
+    systemAction->setCheckable(true);
+    systemAction->setChecked(true);
+    themeGroup->addAction(systemAction);
+
+    QAction *lightAction = viewMenu->addAction(tr("Light Mode"));
+    lightAction->setCheckable(true);
+    themeGroup->addAction(lightAction);
+    
+    QAction *darkAction = viewMenu->addAction(tr("Dark Mode"));
+    darkAction->setCheckable(true);
+    themeGroup->addAction(darkAction);
+    
+    connect(lightAction, &QAction::triggered, this, [this](){ applyTheme(false); });
+    connect(darkAction, &QAction::triggered, this, [this](){ applyTheme(true); });
+    connect(systemAction, &QAction::triggered, this, [this](){ updateTheme(); });
 
     auto validator = new QDoubleValidator(this);
     validator->setNotation(QDoubleValidator::StandardNotation);
@@ -126,4 +153,26 @@ void MainWindow::on_pushButtonClear_clicked()
     
     ui->textEditLog->clear();
     ui->statusbar->clearMessage();
+}
+yTheme(isSystemDarkMode());
+}
+
+void MainWindow::applyTheme(bool isDark)
+{
+    QString path = isDark ? ":/src/gui/style_dark.qss" : ":/src/gui/style_light.qss";
+    QFile styleFile(path);
+    if (styleFile.open(QFile::ReadOnly)) {
+        QString styleSheet = QLatin1String(styleFile.readAll());
+        this->setStyleSheet(styleSheet);
+    }
+}
+
+bool MainWindow::isSystemDarkMode() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+#else
+    const QPalette palette = QGuiApplication::palette();
+    return palette.color(QPalette::WindowText).lightness() > palette.color(QPalette::Window).lightness();
+#endif
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>src/gui/style.qss</file>
+    <file>src/gui/style_light.qss</file>
+    <file>src/gui/style_dark.qss</file>
 </qresource>
 </RCC>
