@@ -19,8 +19,12 @@ public:
 private slots:
     void on_pushButtonCalculate_clicked();
     void on_pushButtonClear_clicked();
+    void updateTheme();
 
 private:
+    void applyTheme(bool isDark);
+    bool isSystemDarkMode() const;
+
     std::unique_ptr<Ui::MainWindow> ui;
 };
 
