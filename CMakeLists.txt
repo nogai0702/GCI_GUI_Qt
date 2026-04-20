@@ -18,6 +18,7 @@ set(PROJECT_SOURCES
     src/gui/MainWindow.h
     src/gui/MainWindow.cpp
     src/gui/MainWindow.ui
+    resources.qrc
 )
 
 if(APPLE)

@@ -4,12 +4,21 @@
 #include <QDoubleValidator>
 #include <QString>
 #include <QLocale>
+#include <QPalette>
+#include <QFile>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(std::make_unique<Ui::MainWindow>())
 {
     ui->setupUi(this);
+
+    // Load Styling from Resource
+    QFile styleFile(":/src/gui/style.qss");
+    if (styleFile.open(QFile::ReadOnly)) {
+        QString styleSheet = QLatin1String(styleFile.readAll());
+        this->setStyleSheet(styleSheet);
+    }
 
     auto validator = new QDoubleValidator(this);
     validator->setNotation(QDoubleValidator::StandardNotation);
@@ -20,6 +29,19 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lineEditPhi2->setValidator(validator);
     ui->lineEditH3->setValidator(validator);
     ui->lineEditPhi3->setValidator(validator);
+
+    // Tooltips (using tr() for localization)
+    ui->lineEditH1->setToolTip(tr("Grid spacing for the finest grid (h₁)"));
+    ui->lineEditPhi1->setToolTip(tr("Numerical solution on the finest grid (ϕ₁)"));
+    ui->lineEditH2->setToolTip(tr("Grid spacing for the medium grid (h₂)"));
+    ui->lineEditPhi2->setToolTip(tr("Numerical solution on the medium grid (ϕ₂)"));
+    ui->lineEditH3->setToolTip(tr("Grid spacing for the coarsest grid (h₃)"));
+    ui->lineEditPhi3->setToolTip(tr("Numerical solution on the coarsest grid (ϕ₃)"));
+
+    ui->labelR21_text->setToolTip(tr("Grid refinement ratio between fine and medium grids (r₂₁ = h₂/h₁ binary)"));
+    ui->labelR32_text->setToolTip(tr("Grid refinement ratio between medium and coarse grids (r₃₂ = h₃/h₂)"));
+    ui->labelP_text->setToolTip(tr("Apparent order of convergence (p)"));
+    ui->labelGCI_text->setToolTip(tr("Grid Convergence Index for the fine grid. Lower is better."));
 }
 
 MainWindow::~MainWindow()
@@ -39,35 +61,69 @@ void MainWindow::on_pushButtonCalculate_clicked()
     GciOutput out = GciCalculator::calculate(input);
 
     if (!out.success) {
-        ui->textEditResults->setPlainText(QString::fromStdString(out.message));
+        ui->statusbar->showMessage(tr("Calculation failed: %1").arg(QString::fromStdString(out.message)), 5000);
+        ui->textEditLog->setPlainText(QString::fromStdString(out.message));
+        
+        // Reset values
+        ui->labelR21_val->setText("-");
+        ui->labelR32_val->setText("-");
+        ui->labelP_val->setText("-");
+        ui->labelGCI_val->setText("-");
         return;
     }
 
-    QString results;
-    results += "RESULTS\n\n";
-    results += QString("Refinement ratios:\n r₂₁ = %1\n r₃₂ = %2\n\n")
-                    .arg(out.r21, 0, 'g', 4)
-                    .arg(out.r32, 0, 'g', 4);
+    ui->statusbar->showMessage(tr("Analysis complete"), 3000);
+
+    // Update Dashboard Metrics
+    ui->labelR21_val->setText(QString::number(out.r21, 'g', 4));
+    ui->labelR32_val->setText(QString::number(out.r32, 'g', 4));
+    ui->labelP_val->setText(QString::number(out.p, 'g', 4));
+    ui->labelGCI_val->setText(QString("%1%").arg(out.GCI21 * 100, 0, 'f', 2));
+
+    // Detailed Log
+    QString log;
+    log += tr("DETAILED REPORT\n");
+    log += "==============================\n";
+    log += tr("Refinement ratios:\n  r₂₁ = %1\n  r₃₂ = %2\n\n")
+                    .arg(out.r21, 0, 'g', 6)
+                    .arg(out.r32, 0, 'g', 6);
     
-    results += QString("Apparent order:\n p = %1\n\n")
-                    .arg(out.p, 0, 'g', 4);
+    log += tr("Apparent order:\n  p = %1\n\n")
+                    .arg(out.p, 0, 'g', 6);
+
+    log += tr("Extrapolated values:\n  ϕ²¹_ext = %1\n  ϕ³²_ext = %2\n\n")
+                    .arg(out.phi21ext, 0, 'g', 6)
+                    .arg(out.phi32ext, 0, 'g', 6);
+
+    log += tr("Errors:\n  Approx. relative error e²¹_a = %1%\n")
+                    .arg(out.e21a * 100, 0, 'f', 4);
+    log += tr("  Extrap. relative error e²¹_ext = %1%\n\n")
+                    .arg(out.e21ext * 100, 0, 'f', 4);
+
+    log += tr("Fine grid convergence index:\n  GCI²¹ = %1%\n")
+                    .arg(out.GCI21 * 100, 0, 'f', 4);
 
     if (!out.message.empty()) {
-        results += QString("WARNING: %1\n\n").arg(QString::fromStdString(out.message));
+        log += tr("\nWARNINGS:\n%1\n").arg(QString::fromStdString(out.message));
     }
 
-    results += QString("Extrapolated values:\n ϕ²¹_ext = %1\n ϕ³²_ext = %2\n\n")
-                    .arg(out.phi21ext, 0, 'g', 4)
-                    .arg(out.phi32ext, 0, 'g', 4);
+    ui->textEditLog->setPlainText(log);
+}
 
-    results += QString("Approximate relative error:\n e²¹_a = %1%\n\n")
-                    .arg(out.e21a * 100, 0, 'f', 2);
-
-    results += QString("Extrapolated relative error:\n e²¹_ext = %1%\n\n")
-                    .arg(out.e21ext * 100, 0, 'f', 2);
-
-    results += QString("Fine grid convergence index:\n GCI²¹ = %1%\n")
-                    .arg(out.GCI21 * 100, 0, 'f', 2);
-
-    ui->textEditResults->setPlainText(results);
+void MainWindow::on_pushButtonClear_clicked()
+{
+    ui->lineEditH1->clear();
+    ui->lineEditPhi1->clear();
+    ui->lineEditH2->clear();
+    ui->lineEditPhi2->clear();
+    ui->lineEditH3->clear();
+    ui->lineEditPhi3->clear();
+    
+    ui->labelR21_val->setText("-");
+    ui->labelR32_val->setText("-");
+    ui->labelP_val->setText("-");
+    ui->labelGCI_val->setText("-");
+    
+    ui->textEditLog->clear();
+    ui->statusbar->clearMessage();
 }

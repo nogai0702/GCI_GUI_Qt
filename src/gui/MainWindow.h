@@ -18,6 +18,7 @@ public:
 
 private slots:
     void on_pushButtonCalculate_clicked();
+    void on_pushButtonClear_clicked();
 
 private:
     std::unique_ptr<Ui::MainWindow> ui;
