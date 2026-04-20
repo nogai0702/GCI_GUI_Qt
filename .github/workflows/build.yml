@@ -64,7 +64,7 @@ jobs:
         Icon=gcigui
         Categories=Science;
         EOF
-        touch deploy/gcigui.png # Dummy icon
+        convert -size 256x256 xc:transparent deploy/gcigui.png
 
         # Run linuxdeploy
         export QMAKE=$(which qmake6 || which qmake)
