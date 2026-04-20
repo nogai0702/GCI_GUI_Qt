@@ -1,0 +1,30 @@
+# Build directories
+build/
+bin/
+obj/
+
+# Qt Creator
+*.user
+*.user.*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+
+# Executables
+gci_test_cpp
+GCI
+GciGui
+*.exe
+*.AppImage
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
