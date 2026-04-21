@@ -173,3 +173,9 @@ bool MainWindow::isSystemDarkMode() const
     return palette.color(QPalette::WindowText).lightness() > palette.color(QPalette::Window).lightness();
 #endif
 }
+
+void MainWindow::updateTheme()
+{
+    // Check the system dark mode state and apply the corresponding theme
+    applyTheme(isSystemDarkMode());
+}
