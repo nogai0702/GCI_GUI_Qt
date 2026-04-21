@@ -31,6 +31,15 @@ endif()
 
 add_executable(GciGui ${PROJECT_SOURCES})
 
+# If no version was passed (e.g., building locally), default to "dev"
+if(NOT DEFINED APP_VERSION)
+    set(APP_VERSION "dev")
+endif()
+
+# Pass the version string to the C++ compiler
+# The escaped quotes (\" \") are crucial so C++ reads it as a string literal
+target_compile_definitions(GciGui PRIVATE APP_VERSION=\"${APP_VERSION}\")
+
 target_link_libraries(GciGui PRIVATE Qt6::Widgets)
 
 install(TARGETS GciGui
