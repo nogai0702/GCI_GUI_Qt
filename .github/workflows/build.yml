@@ -40,11 +40,17 @@ jobs:
     - name: Build
       run: cmake --build build --config Release
 
-    - name: Package (Windows)
+    - name: Package (Windows Portable)
       if: matrix.os == 'windows-latest'
       run: |
+        # Gather the Qt DLLs
         windeployqt build/Release/GciGui.exe
-        powershell Compress-Archive -Path build/Release/* -DestinationPath GciGui-${env:GITHUB_REF_NAME}-Windows.zip
+        
+        # Download the Warp packer
+        Invoke-WebRequest -Uri "https://github.com/dgiagio/warp/releases/download/v0.3.0/windows-x64.warp-packer.exe" -OutFile "warp-packer.exe"
+        
+        # Pack the entire Release folder into a single executable
+        .\warp-packer.exe --arch windows-x64 --input_dir build/Release --exec GciGui.exe --output GciGui-${env:GITHUB_REF_NAME}-Windows.exe
 
     - name: Package (Linux AppImage)
       if: matrix.os == 'ubuntu-latest'
@@ -80,7 +86,7 @@ jobs:
         name: GciGui-${{ github.ref_name }}-${{ matrix.os }}
         path: |
           GciGui-*.AppImage
-          GciGui-*.zip
+          GciGui-*.exe
 
   release:
     name: Create Release
@@ -98,7 +104,7 @@ jobs:
         with:
           files: |
             **/GciGui-*.AppImage
-            **/GciGui-*.zip
+            **/GciGui-*.exe
           draft: false
           prerelease: false
         env:
