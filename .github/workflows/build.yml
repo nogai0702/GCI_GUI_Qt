@@ -81,7 +81,7 @@ jobs:
         mv GCI_Calculator-x86_64.AppImage GciGui-${GITHUB_REF_NAME}-x86_64.AppImage
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: GciGui-${{ github.ref_name }}-${{ matrix.os }}
         path: |
