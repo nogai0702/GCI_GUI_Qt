@@ -153,7 +153,7 @@ void MainWindow::on_pushButtonClear_clicked()
     
     ui->textEditLog->clear();
     ui->statusbar->clearMessage();
-
+}
 void MainWindow::applyTheme(bool isDark)
 {
     QString path = isDark ? ":/src/gui/style_dark.qss" : ":/src/gui/style_light.qss";
