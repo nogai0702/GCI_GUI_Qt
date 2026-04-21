@@ -79,8 +79,8 @@ jobs:
       with:
         name: GciGui-${{ github.ref_name }}-${{ matrix.os }}
         path: |
-          *.AppImage
-          *.zip
+          GciGui-*.AppImage
+          GciGui-*.zip
 
   release:
     name: Create Release
@@ -97,8 +97,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            **/*.AppImage
-            **/*.zip
+            **/GciGui-*.AppImage
+            **/GciGui-*.zip
           draft: false
           prerelease: false
         env:
