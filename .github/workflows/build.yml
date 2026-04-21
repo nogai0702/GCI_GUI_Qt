@@ -35,7 +35,7 @@ jobs:
         sudo apt-get install -y build-essential libgl1-mesa-dev libxcb-cursor0 imagemagick
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DAPP_VERSION="${{ github.ref_name }}"
 
     - name: Build
       run: cmake --build build --config Release
@@ -44,7 +44,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         windeployqt build/Release/GciGui.exe
-        powershell Compress-Archive -Path build/Release/* -DestinationPath GciGui-Windows.zip
+        powershell Compress-Archive -Path build/Release/* -DestinationPath GciGui-${env:GITHUB_REF_NAME}-Windows.zip
 
     - name: Package (Linux AppImage)
       if: matrix.os == 'ubuntu-latest'
@@ -72,15 +72,15 @@ jobs:
         ./linuxdeploy-x86_64.AppImage --appdir AppDir --executable build/GciGui --desktop-file deploy/GciGui.desktop -i deploy/gcigui.png --plugin qt --output appimage
 
         # Move the resulting AppImage to the root for upload
-        mv GCI_Calculator-x86_64.AppImage GciGui-x86_64.AppImage
+        mv GCI_Calculator-x86_64.AppImage GciGui-${GITHUB_REF_NAME}-x86_64.AppImage
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: GciGui-${{ matrix.os }}
+        name: GciGui-${{ github.ref_name }}-${{ matrix.os }}
         path: |
           *.AppImage
-          GciGui-Windows.zip
+          *.zip
 
   release:
     name: Create Release
@@ -97,8 +97,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            GciGui-ubuntu-latest/GciGui-x86_64.AppImage
-            GciGui-windows-latest/GciGui-Windows.zip
+            **/*.AppImage
+            **/*.zip
           draft: false
           prerelease: false
         env:

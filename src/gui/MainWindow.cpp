@@ -153,9 +153,6 @@ void MainWindow::on_pushButtonClear_clicked()
     
     ui->textEditLog->clear();
     ui->statusbar->clearMessage();
-}
-yTheme(isSystemDarkMode());
-}
 
 void MainWindow::applyTheme(bool isDark)
 {
