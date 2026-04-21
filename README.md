@@ -1,6 +1,6 @@
 # GCI Calculator GUI
 
-[![Build and Release](https://github.com/nogai/GCI_QT_gui/actions/workflows/build.yml/badge.svg)](https://github.com/nogai/GCI_QT_gui/actions/workflows/build.yml)
+[![Build and Release](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml/badge.svg)](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml)
 
 A modern, cross-platform Qt 6 application for calculating the **Grid Convergence Index (GCI)**. This tool implements the widely-recognized procedure presented by Celik et al. (2008) to estimate numerical uncertainty in computational simulations.
 
