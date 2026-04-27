@@ -2,17 +2,21 @@ name: Build and Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "master", "testing" ]
     tags:
       - 'v*'
   pull_request:
-    branches: [ main ]
+    branches: [ "main", "master" , "testing" ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
-    name: Build ${{ matrix.os }}
+    name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
 
@@ -23,62 +27,68 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.5.*'
-        host: ${{ matrix.os == 'ubuntu-latest' && 'linux' || 'windows' }}
+        version: '6.5.3' # Lock this to a stable version to prevent random breaks
+        host: ${{ runner.os == 'Windows' && 'windows' || 'linux' }}
         target: 'desktop'
-        arch: ${{ matrix.os == 'ubuntu-latest' && 'gcc_64' || 'win64_msvc2019_64' }}
 
-    - name: Install Dependencies (Linux)
+    - name: Install Linux Dependencies
       if: matrix.os == 'ubuntu-latest'
+      # Ubuntu 22.04+ removed libfuse2 by default, which breaks AppImage creation. We force-install it here.
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libgl1-mesa-dev libxcb-cursor0 imagemagick
+        sudo apt-get install -y libgl1-mesa-dev libfuse2 libxcb-cursor0
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DAPP_VERSION="${{ github.ref_name }}"
+      # Fallback to 'dev' if not a tag push, otherwise use the tag (e.g., v1.2.0)
+      run: >
+        cmake -B build 
+        -DCMAKE_BUILD_TYPE=Release 
+        -DAPP_VERSION="${{ github.ref_name == 'main' && 'dev' || github.ref_name }}"
 
     - name: Build
       run: cmake --build build --config Release
 
-    - name: Package (Windows Portable)
-      if: matrix.os == 'windows-latest'
-      run: |
-        # Gather the Qt DLLs
-        windeployqt build/Release/GciGui.exe
-        
-        # Download the Warp packer
-        Invoke-WebRequest -Uri "https://github.com/dgiagio/warp/releases/download/v0.3.0/windows-x64.warp-packer.exe" -OutFile "warp-packer.exe"
-        
-        # Pack the entire Release folder into a single executable
-        .\warp-packer.exe --arch windows-x64 --input_dir build/Release --exec GciGui.exe --output GciGui-${env:GITHUB_REF_NAME}-Windows.exe
-
     - name: Package (Linux AppImage)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        # Install linuxdeploy and the Qt plugin
-        wget -c https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-        wget -c https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        # Download deployment tools
+        wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
         chmod +x linuxdeploy*.AppImage
 
-        # Create a basic .desktop file and icon for linuxdeploy to use
-        mkdir -p deploy
-        cat > deploy/GciGui.desktop <<EOF
-        [Desktop Entry]
+        # Initialize AppDir
+        mkdir -p AppDir/usr/bin
+        cp build/GciGui AppDir/usr/bin/
+
+        # Create the desktop file and icon (required by linuxdeploy)
+        echo "[Desktop Entry]
         Type=Application
         Name=GCI Calculator
         Exec=GciGui
-        Icon=gcigui
-        Categories=Science;
-        EOF
-        convert -size 256x256 xc:transparent deploy/gcigui.png
+        Icon=GciGui
+        Categories=Science;Math;Engineering;" > AppDir/GciGui.desktop
+        touch AppDir/GciGui.svg # Dummy icon so it doesn't crash
 
-        # Run linuxdeploy
-        export QMAKE=$(which qmake6 || which qmake)
+        # Run linuxdeploy to bundle Qt and generate the final AppImage
+        export QMAKE=$(which qmake)
+        export VERSION=${{ github.ref_name == 'main' && 'dev' || github.ref_name }}
+        ./linuxdeploy-x86_64.AppImage --appdir AppDir -d AppDir/GciGui.desktop -i AppDir/GciGui.svg --plugin qt --output appimage
+        
+        # Rename output for cleaner artifacts
+        mv GCI_Calculator*.AppImage GciGui-${VERSION}-x86_64.AppImage
 
-        ./linuxdeploy-x86_64.AppImage --appdir AppDir --executable build/GciGui --desktop-file deploy/GciGui.desktop -i deploy/gcigui.png --plugin qt --output appimage
-
-        # Move the resulting AppImage to the root for upload
-        mv GCI_Calculator-x86_64.AppImage GciGui-${GITHUB_REF_NAME}-x86_64.AppImage
+    - name: Package (Windows Portable EXE)
+      if: matrix.os == 'windows-latest'
+      run: |
+        # 1. Gather all required Qt DLLs into the Release folder
+        windeployqt build/Release/GciGui.exe
+        
+        # 2. Download the Warp packer
+        Invoke-WebRequest -Uri "https://github.com/dgiagio/warp/releases/download/v0.3.0/windows-x64.warp-packer.exe" -OutFile "warp-packer.exe"
+        
+        # 3. Pack the folder into a single executable
+        $VERSION = if ($env:GITHUB_REF_NAME -eq 'main') { 'dev' } else { $env:GITHUB_REF_NAME }
+        .\warp-packer.exe --arch windows-x64 --input_dir build/Release --exec GciGui.exe --output GciGui-$VERSION-Windows.exe
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -86,7 +96,7 @@ jobs:
         name: GciGui-${{ github.ref_name }}-${{ matrix.os }}
         path: |
           GciGui-*.AppImage
-          GciGui-*.exe
+          GciGui-*-Windows.exe
 
   release:
     name: Create Release
@@ -98,13 +108,16 @@ jobs:
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            **/GciGui-*.AppImage
-            **/GciGui-*.exe
+            artifacts/GciGui-*.AppImage
+            artifacts/GciGui-*.exe
           draft: false
           prerelease: false
         env:

@@ -42,6 +42,10 @@ target_compile_definitions(GciGui PRIVATE APP_VERSION=\"${APP_VERSION}\")
 
 target_link_libraries(GciGui PRIVATE Qt6::Widgets)
 
+if(WIN32)
+    target_link_libraries(GciGui PRIVATE dwmapi)
+endif()
+
 install(TARGETS GciGui
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

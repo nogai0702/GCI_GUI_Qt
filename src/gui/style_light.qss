@@ -97,3 +97,30 @@ QStatusBar {
     background-color: #f8f9fa;
     color: #212529;
 }
+
+/* Menu Bar */
+QMenuBar {
+    background-color: #f3f3f3;
+    color: #1e1e1e;
+    border-bottom: 1px solid #cccccc;
+}
+QMenuBar::item:selected {
+    background-color: #dcdcdc;
+}
+
+/* Dropdown Menus */
+QMenu {
+    background-color: #ffffff;
+    color: #1e1e1e;
+    border: 1px solid #b3b3b3;
+}
+QMenu::item:selected {
+    background-color: #0078d7; /* Standard highlight blue */
+    color: #ffffff;
+}
+
+/* Status Bar (at the bottom) */
+QStatusBar {
+    background-color: #f3f3f3;
+    color: #1e1e1e;
+}

@@ -12,6 +12,9 @@
 #include <QMenu>
 #include <QActionGroup>
 #include <QAction>
+#ifdef Q_OS_WIN
+#include <dwmapi.h>
+#endif
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -154,16 +157,6 @@ void MainWindow::on_pushButtonClear_clicked()
     ui->textEditLog->clear();
     ui->statusbar->clearMessage();
 }
-void MainWindow::applyTheme(bool isDark)
-{
-    QString path = isDark ? ":/src/gui/style_dark.qss" : ":/src/gui/style_light.qss";
-    QFile styleFile(path);
-    if (styleFile.open(QFile::ReadOnly)) {
-        QString styleSheet = QLatin1String(styleFile.readAll());
-        this->setStyleSheet(styleSheet);
-    }
-}
-
 bool MainWindow::isSystemDarkMode() const
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
@@ -178,4 +171,21 @@ void MainWindow::updateTheme()
 {
     // Check the system dark mode state and apply the corresponding theme
     applyTheme(isSystemDarkMode());
+}
+
+void MainWindow::applyTheme(bool isDark)
+{
+    // Apply QT Stylesheet
+    QString path = isDark ? ":/src/gui/style_dark.qss" : ":/src/gui/style_light.qss";
+    QFile styleFile(path);
+    if (styleFile.open(QFile::ReadOnly)) {
+        QString styleSheet = QLatin1String(styleFile.readAll());
+        this->setStyleSheet(styleSheet);
+    }
+
+#ifdef Q_OS_WIN
+    HWND hwnd = (HWND)this->winId();
+    BOOL dark = isDark ? TRUE : FALSE;
+    DwmSetWindowAttribute(hwnd, 20, &dark, sizeof(dark));
+#endif
 }
