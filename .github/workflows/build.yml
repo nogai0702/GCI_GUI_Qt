@@ -2,11 +2,11 @@ name: Build and Release
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "testing" ]
     tags:
       - 'v*'
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master" , "testing" ]
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       # Ubuntu 22.04+ removed libfuse2 by default, which breaks AppImage creation. We force-install it here.
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev libfuse2
+        sudo apt-get install -y libgl1-mesa-dev libfuse2 libxcb-cursor0
 
     - name: Configure CMake
       # Fallback to 'dev' if not a tag push, otherwise use the tag (e.g., v1.2.0)
