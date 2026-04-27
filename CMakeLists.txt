@@ -40,7 +40,7 @@ endif()
 # The escaped quotes (\" \") are crucial so C++ reads it as a string literal
 target_compile_definitions(GciGui PRIVATE APP_VERSION=\"${APP_VERSION}\")
 
-target_link_libraries(GciGui PRIVATE Qt6::Widgets)
+target_link_libraries(GciGui PRIVATE Qt6::Widgets dwmapi)
 
 install(TARGETS GciGui
     BUNDLE DESTINATION .
