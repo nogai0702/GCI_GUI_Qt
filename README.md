@@ -1,3 +1,6 @@
+[![Build and Release](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml)
+[![Build and Release](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml/badge.svg?branch=testing)](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml)
+
 # GCI Calculator GUI
 
 A cross-platform Qt-based graphical user interface for calculating the **Grid Convergence Index (GCI)**, based on the procedure presented by Celik et al. (2008). 
