@@ -27,15 +27,16 @@ You do not need to compile the application yourself. Pre-compiled binaries for L
      ```bash
      chmod +x GciGui-x86_64.AppImage
      ./GciGui-x86_64.AppImage
-     ```
+     
+```
 
    - **macOS (Intel & Apple Silicon):** Download the macOS `.zip` file and extract `GciGui.app`. 
-     > **Note on macOS Security:** Because this is an open-source tool and not signed with a paid Apple Developer certificate, macOS Gatekeeper will flag it as an "unidentified developer." 
-     > To run it: Right-click the app and select **Open**, or run the following command in your terminal to clear the quarantine flag:
-     > 
-```bash
-     > xattr -cr /path/to/GciGui.app
-     > ```
+     > **Note on macOS Security:** Because this is an open-source tool and not signed with a paid Apple Developer certificate, macOS Gatekeeper will flag it as an "unidentified developer." To run it, right-click the app and select **Open**, or clear the quarantine flag via terminal:
+
+     ```bash
+     xattr -cr /path/to/GciGui.app
+     
+```
 
 ## Usage
 
