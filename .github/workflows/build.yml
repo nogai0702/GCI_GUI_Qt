@@ -24,6 +24,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set Safe Version Environment Variable
+      shell: bash
+      # This converts "9/merge" to "9-merge" to prevent file path and artifact upload crashes during PRs
+      run: |
+        RAW_VERSION="${{ github.ref_name == 'main' && 'dev' || github.ref_name }}"
+        SAFE_VERSION="${RAW_VERSION//\//-}"
+        echo "SAFE_VERSION=$SAFE_VERSION" >> $GITHUB_ENV
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
@@ -39,11 +47,10 @@ jobs:
         sudo apt-get install -y libgl1-mesa-dev libfuse2 libxcb-cursor0
 
     - name: Configure CMake
-      # Fallback to 'dev' if not a tag push, otherwise use the tag (e.g., v1.2.0)
       run: >
         cmake -B build 
         -DCMAKE_BUILD_TYPE=Release 
-        -DAPP_VERSION="${{ github.ref_name == 'main' && 'dev' || github.ref_name }}"
+        -DAPP_VERSION="${{ env.SAFE_VERSION }}"
 
     - name: Build
       run: cmake --build build --config Release
@@ -71,11 +78,11 @@ jobs:
 
         # Run linuxdeploy to bundle Qt and generate the final AppImage
         export QMAKE=$(which qmake)
-        export VERSION=${{ github.ref_name == 'main' && 'dev' || github.ref_name }}
+        export LINUXDEPLOY_OUTPUT_VERSION="${{ env.SAFE_VERSION }}"
         ./linuxdeploy-x86_64.AppImage --appdir AppDir -d AppDir/GciGui.desktop -i AppDir/GciGui.svg --plugin qt --output appimage
         
         # Rename output for cleaner artifacts
-        mv GCI_Calculator*.AppImage GciGui-${VERSION}-x86_64.AppImage
+        mv GCI_Calculator*.AppImage GciGui-${{ env.SAFE_VERSION }}-x86_64.AppImage
 
     - name: Package (Windows Portable EXE)
       if: matrix.os == 'windows-latest'
@@ -87,20 +94,55 @@ jobs:
         Invoke-WebRequest -Uri "https://github.com/dgiagio/warp/releases/download/v0.3.0/windows-x64.warp-packer.exe" -OutFile "warp-packer.exe"
         
         # 3. Pack the folder into a single executable
-        $VERSION = if ($env:GITHUB_REF_NAME -eq 'main') { 'dev' } else { $env:GITHUB_REF_NAME }
-        .\warp-packer.exe --arch windows-x64 --input_dir build/Release --exec GciGui.exe --output GciGui-$VERSION-Windows.exe
+        .\warp-packer.exe --arch windows-x64 --input_dir build/Release --exec GciGui.exe --output GciGui-${{ env.SAFE_VERSION }}-Windows.exe
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: GciGui-${{ github.ref_name }}-${{ matrix.os }}
+        name: GciGui-${{ env.SAFE_VERSION }}-${{ matrix.os }}
         path: |
           GciGui-*.AppImage
           GciGui-*-Windows.exe
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Safe Version Environment Variable
+        shell: bash
+        run: |
+          RAW_VERSION="${{ github.ref_name == 'main' && 'dev' || github.ref_name }}"
+          SAFE_VERSION="${RAW_VERSION//\//-}"
+          echo "SAFE_VERSION=$SAFE_VERSION" >> $GITHUB_ENV
+      
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          host: 'mac'
+          target: 'desktop'
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package for Mac
+        run: |
+          macdeployqt build/GciGui.app
+          zip -r GciGui-${{ env.SAFE_VERSION }}-macOS.zip build/GciGui.app
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GciGui-${{ env.SAFE_VERSION }}-macos-latest
+          path: GciGui-*-macOS.zip
+
   release:
     name: Create Release
-    needs: build
+    needs: [build, build-macos]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
@@ -118,6 +160,7 @@ jobs:
           files: |
             artifacts/GciGui-*.AppImage
             artifacts/GciGui-*.exe
+            artifacts/GciGui-*-macOS.zip
           draft: false
           prerelease: false
         env:

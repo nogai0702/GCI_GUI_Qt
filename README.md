@@ -1,4 +1,9 @@
+[![master](https://img.shields.io/github/actions/workflow/status/nogai0702/GCI_GUI_Qt/build.yml?branch=master&label=master)](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml)
+[![testing](https://img.shields.io/github/actions/workflow/status/nogai0702/GCI_GUI_Qt/build.yml?branch=testing&label=testing)](https://github.com/nogai0702/GCI_GUI_Qt/actions/workflows/build.yml)
+
 # GCI Calculator GUI
+
+![GCI Calculator Screenshot](docs/screenshot.png) 
 
 A cross-platform Qt-based graphical user interface for calculating the **Grid Convergence Index (GCI)**, based on the procedure presented by Celik et al. (2008). 
 
@@ -7,53 +12,33 @@ This application calculates:
 - Apparent order of the method ($p$)
 - Extrapolated values ($\phi_{ext}$)
 - Approximate and extrapolated relative errors
-- Fine grid convergence index ($GCI$)
+- Fine grid convergence index ($GCI^{21}$)
 
-## Prerequisites
+## Download & Installation
+
+You do not need to compile the application yourself. Pre-compiled binaries for Linux, Windows, and macOS are automatically generated for every release.
+
+1. Go to the [Releases](../../releases/latest) page of this repository.
+2. Download the appropriate file for your operating system:
+
+### Windows
+Download the `.exe` file. It is a standalone portable executable.
 
 ### Linux
-To build the application locally, you need:
-- **CMake** (3.16 or higher)
-- **C++ Compiler** (supporting C++17)
-- **Qt 6 SDK** (including the `Widgets` component)
-
-On Ubuntu/Debian, you can install the dependencies with:
+Download the `.AppImage` file. 
 ```bash
-sudo apt-get update
-sudo apt-get install build-essential cmake qt6-base-dev qt6-base-private-dev
+chmod +x GciGui-x86_64.AppImage
+./GciGui-x86_64.AppImage
 ```
 
-## Building Locally (Linux)
+### macOS (Intel & Apple Silicon)
+Download the macOS `.zip` file and extract `GciGui.app`. 
 
-1. **Configure the project:**
-   ```bash
-   cmake -B build -DCMAKE_BUILD_TYPE=Release
-   ```
+> **Note on macOS Security:** Because this is an open-source tool and not signed with a paid Apple Developer certificate, macOS Gatekeeper will flag it as an "unidentified developer." To run it, right-click the app and select **Open**, or clear the quarantine flag via terminal:
 
-2. **Build the application:**
-   ```bash
-   cmake --build build
-   ```
-
-3. **Run the application:**
-   ```bash
-   ./build/GciGui
-   ```
-
-## Downloading Executables (Linux & Windows)
-
-You don't need to compile the application yourself. The project includes a GitHub Actions workflow that automatically builds it for you.
-
-1. Push this project to a **GitHub repository**.
-2. Navigate to the **Actions** tab in your repository.
-3. Wait for the "Build and Release" workflow to complete.
-4. Download the artifacts:
-   - **Linux:** Download `GciGui-ubuntu-latest`. It contains a `.AppImage` file. To run it:
-     ```bash
-     chmod +x GciGui-x86_64.AppImage
-     ./GciGui-x86_64.AppImage
-     ```
-   - **Windows:** Download `GciGui-windows-latest`. It contains a `.zip` file with the standalone `.exe` and all dependencies.
+```bash
+xattr -cr /path/to/GciGui.app
+```
 
 ## Usage
 
@@ -61,20 +46,40 @@ You don't need to compile the application yourself. The project includes a GitHu
    - **Fine Grid:** Enter the representative cell size ($h_1$) and the parameter of interest ($\phi_1$).
    - **Medium Grid:** Enter $h_2$ and $\phi_2$.
    - **Coarse Grid:** Enter $h_3$ and $\phi_3$.
-2. **Calculate:** Click the "Calculate" button.
-3. **Results:** View the computed GCI and related parameters in the results pane.
+2. **Calculate:** Click the "Run GCI Analysis" button.
+3. **Results:** View the computed GCI, Apparent Order, and related parameters in the results pane. Detailed calculation warnings will appear in the log window.
+
+---
+
+## Building Locally (For Developers)
+
+If you wish to compile the application from source, you will need **CMake** (3.16+), a **C++17 Compiler**, and the **Qt 6 SDK**.
+
+### Linux
+```bash
+sudo apt-get update && sudo apt-get install build-essential cmake qt6-base-dev
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/GciGui
+```
+
+### macOS (via Homebrew)
+```bash
+brew install cmake qt@6
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$(brew --prefix qt@6)
+cmake --build build
+macdeployqt build/GciGui.app
+```
 
 ## Releasing a New Version
 
-To create a formal release with downloadable binaries:
+The CI/CD pipeline uses GitHub Actions to automatically build and package the `.exe`, `.AppImage`, and `.app` bundle whenever a new tag is pushed.
 
-1. Tag the current commit:
-   ```bash
-   git tag v1.0.0
-   ```
-2. Push the tag to GitHub:
-   ```bash
-   git push origin v1.0.0
-   ```
-GitHub Actions will automatically build the executables and create a new Release on your repository page.
-Qt GUI conversion and modern build system setup by Gemini CLI.
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)** - see the `LICENSE` file for details.

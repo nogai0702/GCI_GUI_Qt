@@ -29,7 +29,7 @@ if(APPLE)
     set(MACOSX_BUNDLE_COPYRIGHT "Copyright © 2026")
 endif()
 
-add_executable(GciGui ${PROJECT_SOURCES})
+add_executable(GciGui WIN32 MACOSX_BUNDLE ${PROJECT_SOURCES})
 
 # If no version was passed (e.g., building locally), default to "dev"
 if(NOT DEFINED APP_VERSION)
