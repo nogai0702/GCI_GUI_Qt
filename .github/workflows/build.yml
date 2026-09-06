@@ -35,7 +35,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.5.3' # Lock this to a stable version to prevent random breaks
+        version: '6.7.2' # Lock this to a stable version to prevent random breaks
         host: ${{ runner.os == 'Windows' && 'windows' || 'linux' }}
         target: 'desktop'
 
@@ -119,7 +119,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.5.3'
+          version: '6.7.2'
           host: 'mac'
           target: 'desktop'
 
