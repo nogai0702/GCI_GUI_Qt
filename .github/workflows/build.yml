@@ -124,7 +124,9 @@ jobs:
           target: 'desktop'
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+          find build -name "link.txt" -exec sed -i '' 's/-framework AGL//g' {} +
 
       - name: Build
         run: cmake --build build
