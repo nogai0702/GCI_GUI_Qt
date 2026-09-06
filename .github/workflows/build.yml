@@ -22,11 +22,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set Safe Version Environment Variable
       shell: bash
-      # This converts "9/merge" to "9-merge" to prevent file path and artifact upload crashes during PRs
       run: |
         RAW_VERSION="${{ github.ref_name == 'main' && 'dev' || github.ref_name }}"
         SAFE_VERSION="${RAW_VERSION//\//-}"
@@ -35,13 +34,12 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version: '6.5.3' # Lock this to a stable version to prevent random breaks
+        version: '6.7.2'
         host: ${{ runner.os == 'Windows' && 'windows' || 'linux' }}
         target: 'desktop'
 
     - name: Install Linux Dependencies
       if: matrix.os == 'ubuntu-latest'
-      # Ubuntu 22.04+ removed libfuse2 by default, which breaks AppImage creation. We force-install it here.
       run: |
         sudo apt-get update
         sudo apt-get install -y libgl1-mesa-dev libfuse2 libxcb-cursor0
@@ -58,46 +56,36 @@ jobs:
     - name: Package (Linux AppImage)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        # Download deployment tools
         wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
         wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
         chmod +x linuxdeploy*.AppImage
 
-        # Initialize AppDir
         mkdir -p AppDir/usr/bin
         cp build/GciGui AppDir/usr/bin/
 
-        # Create the desktop file and icon (required by linuxdeploy)
         echo "[Desktop Entry]
         Type=Application
         Name=GCI Calculator
         Exec=GciGui
         Icon=GciGui
         Categories=Science;Math;Engineering;" > AppDir/GciGui.desktop
-        touch AppDir/GciGui.svg # Dummy icon so it doesn't crash
+        touch AppDir/GciGui.svg
 
-        # Run linuxdeploy to bundle Qt and generate the final AppImage
         export QMAKE=$(which qmake)
         export LINUXDEPLOY_OUTPUT_VERSION="${{ env.SAFE_VERSION }}"
         ./linuxdeploy-x86_64.AppImage --appdir AppDir -d AppDir/GciGui.desktop -i AppDir/GciGui.svg --plugin qt --output appimage
         
-        # Rename output for cleaner artifacts
         mv GCI_Calculator*.AppImage GciGui-${{ env.SAFE_VERSION }}-x86_64.AppImage
 
     - name: Package (Windows Portable EXE)
       if: matrix.os == 'windows-latest'
       run: |
-        # 1. Gather all required Qt DLLs into the Release folder
         windeployqt build/Release/GciGui.exe
-        
-        # 2. Download the Warp packer
         Invoke-WebRequest -Uri "https://github.com/dgiagio/warp/releases/download/v0.3.0/windows-x64.warp-packer.exe" -OutFile "warp-packer.exe"
-        
-        # 3. Pack the folder into a single executable
         .\warp-packer.exe --arch windows-x64 --input_dir build/Release --exec GciGui.exe --output GciGui-${{ env.SAFE_VERSION }}-Windows.exe
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: GciGui-${{ env.SAFE_VERSION }}-${{ matrix.os }}
         path: |
@@ -107,7 +95,7 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set Safe Version Environment Variable
         shell: bash
@@ -119,12 +107,14 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.5.3'
+          version: '6.7.2'
           host: 'mac'
           target: 'desktop'
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+          find build -name "link.txt" -exec sed -i '' 's/-framework AGL//g' {} +
 
       - name: Build
         run: cmake --build build
@@ -135,7 +125,7 @@ jobs:
           zip -r GciGui-${{ env.SAFE_VERSION }}-macOS.zip build/GciGui.app
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: GciGui-${{ env.SAFE_VERSION }}-macos-latest
           path: GciGui-*-macOS.zip
@@ -149,13 +139,13 @@ jobs:
       contents: write
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
           merge-multiple: true
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/GciGui-*.AppImage

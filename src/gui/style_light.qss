@@ -5,6 +5,7 @@ QMainWindow {
 
 QWidget {
     color: #212529;
+    font-size: 14px;
 }
 
 QLabel#labelTitle {
@@ -12,6 +13,11 @@ QLabel#labelTitle {
     font-weight: bold;
     color: #2c3e50;
     padding: 10px;
+}
+
+QLabel#labelGCI, Qlabel#labelOrder {
+    font-weight: bold;
+    font-size: 16px;
 }
 
 QLabel#labelResultsHeader {
@@ -90,7 +96,7 @@ QTextEdit#textEditLog {
     color: #212529;
     border-radius: 4px;
     font-family: 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 13px;
 }
 
 QStatusBar {
